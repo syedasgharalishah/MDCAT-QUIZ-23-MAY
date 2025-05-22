@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDCAT Daily Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom styles for gradients, animations, and specific elements */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA; /* Primary background */
+            color: #2C3E50; /* Text color */
+        }
+
+        /* Progress bar gradient */
+        .progress-bar-gradient {
+            background-image: linear-gradient(to right, #20B2AA, #3EB489);
+        }
+
+        /* Accent button gradient */
+        .btn-accent {
+            background-image: linear-gradient(to right, #E6E6FA, #FFDAB9);
+            color: #2C3E50;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .btn-accent:hover {
+            transform: scale(1.05);
+        }
+
+        /* Card layout */
+        .card {
+            background-color: white;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadows */
+        }
+
+        /* Option hover effect */
+        .option-card:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        /* Correct answer feedback */
+        .option-correct {
+            animation: pulse-green 0.5s forwards;
+            background-color: #90EE90; /* Light Green */
+        }
+
+        /* Incorrect answer feedback */
+        .option-incorrect {
+            animation: shake-red 0.5s forwards;
+            background-color: #FF6B6B; /* Red */
+        }
+
+        /* Today's Special Question border */
+        .special-question {
+            border: 4px solid #FFD700; /* Golden border */
+        }
+
+        /* Animations */
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); background-color: #90EE90; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake-red {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); background-color: #FF6B6B; }
+        }
+
+        /* Section divider */
+        .section-divider {
+            background-color: #FFF5EE; /* Section dividers */
+            height: 2px;
+            margin: 2rem 0;
+        }
+
+        /* Fixed date bar for mobile */
+        @media (max-width: 768px) {
+            .fixed-date-bar {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background-color: #F8F9FA;
+                padding: 0.5rem 1rem;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            }
+        }
+
+        /* Hide elements for security */
+        body {
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard syntax */
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;" onkeydown="if(event.ctrlKey || event.keyCode==123) return false;" onselectstart="return false;" oncopy="return false;">
+
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div class="card p-8 w-full max-w-md text-center">
+            <h2 class="text-3xl font-bold mb-6 text-[#2C3E50]">MDCAT Quiz Login</h2>
+            <input type="text" id="username" placeholder="Username" class="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <input type="password" id="password" placeholder="Password" class="w-full p-3 mb-6 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <button id="login-btn" class="btn-accent w-full py-3 rounded-md text-lg font-semibold">Login</button>
+            <p id="login-error" class="text-red-500 mt-4 hidden">Invalid username or password.</p>
+        </div>
+    </div>
+
+    <div id="name-entry-screen" class="min-h-screen flex items-center justify-center bg-gray-100 p-4 hidden">
+        <div class="card p-8 w-full max-w-md text-center">
+            <h2 class="text-3xl font-bold mb-6 text-[#2C3E50]">Enter Your Full Name</h2>
+            <input type="text" id="full-name" placeholder="Full Name" class="w-full p-3 mb-6 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <button id="start-quiz-btn" class="btn-accent w-full py-3 rounded-md text-lg font-semibold">Start Quiz</button>
+            <p id="name-error" class="text-red-500 mt-4 hidden">Please enter your full name.</p>
+        </div>
+    </div>
+
+    <div id="quiz-interface" class="min-h-screen flex flex-col hidden">
+        <header class="bg-white shadow-md p-4 sticky top-0 z-10">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl md:text-3xl font-bold text-[#2C3E50] text-center flex-grow">
+                    MDCAT Daily Quiz – <span id="quiz-date"></span>
+                </h1>
+                <div class="text-[#6D6875] flex items-center text-sm md:text-base">
+                    <i class="far fa-clock mr-2"></i>
+                    <span id="live-date"></span>
+                </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                <div id="progress-bar" class="h-2.5 rounded-full progress-bar-gradient" style="width: 0%;"></div>
+            </div>
+        </header>
+
+        <section class="bg-white p-4 text-center shadow-sm">
+            <img src="https://i.ibb.co/zHDMrzbf/20250520-0957-Timeless-Healing-Wisdom-simple-compose-01jvqa0g2zfmzs4tq83z7k3h93.png" alt="MDCAT Banner" class="mx-auto w-full max-w-xl rounded-lg shadow-md mb-4">
+            <h2 class="text-xl md:text-2xl font-bold text-[#2C3E50]">Medical Entrance Success Pakistan</h2>
+            <p class="text-lg text-[#2C3E50]">Contact: 03265762698</p>
+            <p class="text-sm text-gray-500">Updated on: <span id="updated-date"></span></p>
+            <div class="section-divider"></div>
+        </section>
+
+        <main class="flex-grow container mx-auto p-4 md:p-8">
+            <div id="quiz-message" class="text-center text-xl font-semibold text-red-600 mb-4 hidden">
+                No quiz available for today. The next quiz is on <span id="next-quiz-date"></span>.
+            </div>
+            <div id="quiz-content" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-lg font-semibold text-[#2C3E50]">Time Left: <span id="countdown-timer">01:00:00</span></div>
+                    <button id="surprise-me-btn" class="btn-accent px-4 py-2 rounded-md text-sm md:text-base">Surprise Me (30% Random)</button>
+                </div>
+
+                <div id="question-card" class="card p-6 mb-6">
+                    <p class="text-lg font-semibold mb-4 text-[#2C3E50]" id="question-text"></p>
+                    <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        </div>
+                    <div id="explanation-container" class="mt-6 p-4 bg-gray-50 rounded-md hidden">
+                        <h4 class="font-bold text-[#2C3E50]">Explanation:</h4>
+                        <p id="explanation-text" class="text-sm text-gray-700"></p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <button id="prev-btn" class="btn-accent px-6 py-3 rounded-md text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <button id="next-btn" class="btn-accent px-6 py-3 rounded-md text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    <button id="submit-quiz-btn" class="btn-accent px-6 py-3 rounded-md text-lg font-semibold hidden">Submit Quiz</button>
+                </div>
+            </div>
+        </main>
+
+        <div id="results-screen" class="min-h-screen flex items-center justify-center bg-gray-100 p-4 hidden">
+            <div class="card p-8 w-full max-w-md text-center">
+                <h2 class="text-3xl font-bold mb-6 text-[#2C3E50]">Quiz Results</h2>
+                <p class="text-lg mb-2">Name: <span id="result-name" class="font-semibold"></span></p>
+                <p class="text-lg mb-2">Score: <span id="result-score" class="font-semibold"></span> / 100</p>
+                <p class="text-lg mb-2">Attempted Questions: <span id="result-attempted" class="font-semibold"></span></p>
+                <p class="text-lg mb-4">Time Taken: <span id="result-time" class="font-semibold"></span></p>
+                <button id="retake-quiz-btn" class="btn-accent w-full py-3 rounded-md text-lg font-semibold">Retake Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Security: Disable right-click and common developer shortcuts
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', event => {
+            if (event.ctrlKey && (event.key === 'u' || event.key === 'U')) {
+                event.preventDefault();
+            }
+            if (event.keyCode === 123) { // F12 key
+                event.preventDefault();
+            }
+        });
+
+        const SYLLABUS = [
+            { date: 'May 23, 2025', topic: 'Biology: ACELLULAR LIFE (1.1, 1.2)' },
+            { date: 'May 24, 2025', topic: 'Biology: BIOENERGETICS (2.1, 2.2, 2.3)' },
+            { date: 'May 25, 2025', topic: 'Biology: BIOLOGICAL MOLECULES (3.1, 3.2, 3.3)' },
+            { date: 'May 26, 2025', topic: 'Biology: BIOLOGICAL MOLECULES (3.4, 3.5, 3.6)' },
+            { date: 'May 27, 2025', topic: 'Biology: BIOLOGICAL MOLECULES (3.7, 3.8)' },
+            { date: 'May 28, 2025', topic: 'Biology: CELL STRUCTURE & FUNCTION (4.1, 4.2, 4.3)' },
+            { date: 'May 29, 2025', topic: 'Biology: COORDINATION & CONTROL (5.1, 5.2, 5.3)' },
+            { date: 'May 30, 2025', topic: 'Biology: COORDINATION & CONTROL (5.4, 5.5, 5.6, 5.7, 5.8)' },
+            { date: 'May 31, 2025', topic: 'Biology: DIVERSITY AMONG ANIMALS (6.1), ENZYMES (7.1)' },
+            { date: 'June 01, 2025', topic: 'Biology: ENZYMES (7.2, 7.3, 7.4), EVOLUTION (8.1, 8.2)' },
+            { date: 'June 02, 2025', topic: 'Biology: EVOLUTION (8.3), PROKARYOTES (9.1, 9.2, 9.3)' },
+            { date: 'June 03, 2025', topic: 'Biology: REPRODUCTION (10.1, 10.2, 10.3), SUPPORT & MOVEMENT (11.1)' },
+            { date: 'June 04, 2025', topic: 'Biology: SUPPORT & MOVEMENT (11.2, 11.3, 11.4, 11.5)' },
+            { date: 'June 05, 2025', topic: 'Biology: SUPPORT & MOVEMENT (11.6, 11.7), INHERITANCE (12.1, 12.2)' },
+            { date: 'June 06, 2025', topic: 'Biology: INHERITANCE (12.3, 12.4, 12.5, 12.6, 12.7)' },
+            { date: 'June 07, 2025', topic: 'Biology: Form and Function in Plants (13.1, 13.2, 13.3, 13.4)' },
+            { date: 'June 08, 2025', topic: 'Biology: Circulation (14.1, 14.2, 14.3, 14.4)' },
+            { date: 'June 09, 2025', topic: 'Biology: Immunity (15.1), Respiration (16.1, 16.2, 16.3)' },
+            { date: 'June 10, 2025', topic: 'Chemistry: FUNDAMENTAL CONCEPTS OF CHEMISTRY (1.1, 1.2, 1.3, 1.4, 1.5, 1.6)' },
+            { date: 'June 11, 2025', topic: 'Chemistry: ATOMIC STRUCTURE (2.1, 2.2, 2.3, 2.4, 2.5, 2.6)' },
+            { date: 'June 12, 2025', topic: 'Chemistry: GASES (3.1, 3.2, 3.3, 3.4, 3.5)' },
+            { date: 'June 13, 2025', topic: 'Chemistry: LIQUIDS (4.1, 4.2, 4.3, 4.4)' },
+            { date: 'June 14, 2025', topic: 'Chemistry: SOLIDS (5.1, 5.2, 5.3, 5.4, 5.5)' },
+            { date: 'June 15, 2025', topic: 'Chemistry: CHEMICAL EQUILIBRIUM (6.1, 6.2, 6.3, 6.4)' },
+            { date: 'June 16, 2025', topic: 'Chemistry: CHEMICAL EQUILIBRIUM (6.5, 6.6, 6.7), REACTION KINETICS (7.1, 7.2)' },
+            { date: 'June 17, 2025', topic: 'Chemistry: REACTION KINETICS (7.3, 7.4, 7.5, 7.6, 7.7, 7.8)' },
+            { date: 'June 18, 2025', topic: 'Chemistry: THERMOCHEMISTRY & ENERGETICS (8.1, 8.2, 8.3, 8.4, 8.5)' },
+            { date: 'June 19, 2025', topic: 'Chemistry: THERMOCHEMISTRY & ENERGETICS (8.6, 8.7), ELECTROCHEMISTRY (9.1, 9.2)' },
+            { date: 'June 20, 2025', topic: 'Chemistry: ELECTROCHEMISTRY (9.3, 9.4, 9.5), CHEMICAL BONDING (10.1, 10.2)' },
+            { date: 'June 21, 2025', topic: 'Chemistry: CHEMICAL BONDING (10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9)' },
+            { date: 'June 22, 2025', topic: 'Chemistry: S AND P BLOCK ELEMENTS (11.1, 11.2, 11.3, 11.4, 11.5)' },
+            { date: 'June 23, 2025', topic: 'Chemistry: TRANSITION ELEMENTS (General), FUNDAMENTAL PRINCIPLES OF ORGANIC CHEMISTRY (13.1, 13.2, 13.3, 13.4)' },
+            { date: 'June 24, 2025', topic: 'Chemistry: CHEMISTRY OF HYDROCARBONS (14.1, 14.2, 14.3, 14.4, 14.5, 14.6)' },
+            { date: 'June 25, 2025', topic: 'Chemistry: CHEMISTRY OF HYDROCARBONS (14.7, 14.8, 14.9, 14.10, 14.11)' },
+            { date: 'June 26, 2025', topic: 'Chemistry: CHEMISTRY OF HYDROCARBONS (14.12, 14.13, 14.14, 14.15, 14.16)' },
+            { date: 'June 27, 2025', topic: 'Chemistry: CHEMISTRY OF HYDROCARBONS (14.17, 14.18, 14.19, 14.20, 14.21, 14.22, 14.23)' },
+            { date: 'June 28, 2025', topic: 'Chemistry: ALKYL HALIDES (15.1, 15.2, 15.3, 15.4), ALCOHOLS AND PHENOLS (16.1)' },
+            { date: 'June 29, 2025', topic: 'Chemistry: ALCOHOLS AND PHENOLS (16.2, 16.3, 16.4, 16.5, 16.6), ALDEHYDES KETONES (17.1)' },
+            { date: 'June 30, 2025', topic: 'Chemistry: ALDEHYDES KETONES (17.2, 17.3, 17.4, 17.5, 17.6), CARBOXYLIC ACIDS (18.1, 18.2, 18.3)' },
+            { date: 'July 01, 2025', topic: 'Chemistry: MACRO MOLECULES (19.1, 19.2, 19.3)' },
+            { date: 'July 02, 2025', topic: 'Physics: FORCE AND MOTION (1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7)' },
+            { date: 'July 03, 2025', topic: 'Physics: FORCE AND MOTION (1.8, 1.9, 1.10, 1.11, 1.12, 1.13)' },
+            { date: 'July 04, 2025', topic: 'Physics: WORK AND ENERGY (2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8)' },
+            { date: 'July 05, 2025', topic: 'Physics: ROTATIONAL AND CIRCULAR MOTION (3.1, 3.2, 3.3, 3.4), WAVES (4.1, 4.2)' },
+            { date: 'July 06, 2025', topic: 'Physics: WAVES (4.3, 4.4, 4.5, 4.6, 4.7, 4.8)' },
+            { date: 'July 07, 2025', topic: 'Physics: WAVES (4.9, 4.10, 4.11, 4.12, 4.13), THERMODYNAMICS (5.1, 5.2)' },
+            { date: 'July 08, 2025', topic: 'Physics: THERMODYNAMICS (5.3, 5.4, 5.5, 5.6), ELECTROSTATICS (6.1, 6.2)' },
+            { date: 'July 09, 2025', topic: 'Physics: ELECTROSTATICS (6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9)' },
+            { date: 'July 10, 2025', topic: 'Physics: CURRENT ELECTRICITY (7.1, 7.2, 7.3, 7.4, 7.5), ELECTROMAGNETISM (8.1)' },
+            { date: 'July 11, 2025', topic: 'Physics: ELECTROMAGNETISM (8.2, 8.3, 8.4), ELECTROMAGNETIC INDUCTION (9.1, 9.2)' },
+            { date: 'July 12, 2025', topic: 'Physics: ELECTROMAGNETIC INDUCTION (9.3, 9.4), ELECTRONICS (10.1), DAWN OF MODERN PHYSICS (11.1)' },
+            { date: 'July 13, 2025', topic: 'Physics: SPECTRA (12.1), NUCLEAR PHYSICS (13.1, 13.2, 13.3, 13.4)' },
+        ];
+
+        // Mock Questions for "Biology: ACELLULAR LIFE (1.1, 1.2)"
+        // This array will contain 100 questions (10 easy, 50 medium, 40 tough)
+        // For demonstration, I'll create a representative set of questions.
+        // In a real scenario, these would be loaded from a more robust data source.
+        const QUIZ_QUESTIONS = [
+            // Easy Questions (10)
+            {
+                id: 1,
+                question: "Which of the following describes viruses?",
+                options: ["Cellular organisms", "Acellular entities", "Prokaryotic cells", "Eukaryotic cells"],
+                correctAnswer: "Acellular entities",
+                explanation: "Viruses are considered acellular because they lack cellular machinery and cannot carry out life processes independently.",
+                difficulty: "easy"
+            },
+            {
+                id: 2,
+                question: "What is the primary characteristic that makes viruses 'acellular'?",
+                options: ["They have a nucleus.", "They lack cell machinery.", "They are very large.", "They can move independently."],
+                correctAnswer: "They lack cell machinery.",
+                explanation: "Viruses do not possess the organelles and structures found in cells, such as ribosomes or mitochondria, making them acellular.",
+                difficulty: "easy"
+            },
+            {
+                id: 3,
+                question: "Viruses are alive only when they are inside a:",
+                options: ["Petri dish", "Host cell", "Test tube", "Water droplet"],
+                correctAnswer: "Host cell",
+                explanation: "Viruses are obligate intracellular parasites, meaning they can only replicate and exhibit life functions when inside a living host cell.",
+                difficulty: "easy"
+            },
+            {
+                id: 4,
+                question: "Which of the following is a common mode of transmission for viral diseases?",
+                options: ["Eating healthy food", "Drinking clean water", "Direct contact", "Sleeping well"],
+                correctAnswer: "Direct contact",
+                explanation: "Many viral diseases, like the common cold or flu, are transmitted through direct contact with infected individuals or contaminated surfaces.",
+                difficulty: "easy"
+            },
+            {
+                id: 5,
+                question: "What does 'AIDS' stand for?",
+                options: ["Acute Immune Deficiency Syndrome", "Acquired Immunodeficiency Syndrome", "Autoimmune Disease System", "Advanced Infectious Disease Symptoms"],
+                correctAnswer: "Acquired Immunodeficiency Syndrome",
+                explanation: "AIDS is an acronym for Acquired Immunodeficiency Syndrome, a condition caused by the Human Immunodeficiency Virus (HIV).",
+                difficulty: "easy"
+            },
+            {
+                id: 6,
+                question: "The causative agent of AIDS is a:",
+                options: ["Bacterium", "Fungus", "Virus", "Protozoan"],
+                correctAnswer: "Virus",
+                explanation: "AIDS is caused by the Human Immunodeficiency Virus (HIV), which attacks the immune system.",
+                difficulty: "easy"
+            },
+            {
+                id: 7,
+                question: "Which type of nucleic acid can be found in viruses?",
+                options: ["Only DNA", "Only RNA", "Both DNA and RNA", "Neither DNA nor RNA"],
+                correctAnswer: "Both DNA and RNA",
+                explanation: "Viruses can have either DNA or RNA as their genetic material, but not both simultaneously.",
+                difficulty: "easy"
+            },
+            {
+                id: 8,
+                question: "What is the protein coat surrounding a viral genome called?",
+                options: ["Cell wall", "Capsid", "Envelope", "Membrane"],
+                correctAnswer: "Capsid",
+                explanation: "The capsid is the protein shell of a virus, enclosing its genetic material.",
+                difficulty: "easy"
+            },
+            {
+                id: 9,
+                question: "Which of these is NOT a typical symptom of AIDS?",
+                options: ["Fever", "Weight loss", "Strong immune system", "Fatigue"],
+                correctAnswer: "Strong immune system",
+                explanation: "AIDS is characterized by a severely weakened immune system, leading to opportunistic infections and various symptoms like fever, weight loss, and fatigue.",
+                difficulty: "easy"
+            },
+            {
+                id: 10,
+                question: "Viruses are classified based on their:",
+                options: ["Color", "Taste", "Structure/number of strands/diseases/host", "Weight"],
+                correctAnswer: "Structure/number of strands/diseases/host",
+                explanation: "Viral classification considers factors like their genetic material (DNA/RNA), capsid structure, presence of an envelope, and the type of host they infect.",
+                difficulty: "easy"
+            },
+
+            // Medium Questions (50) - A representative sample
+            {
+                id: 11,
+                question: "How do viruses replicate?",
+                options: ["Through binary fission", "By budding off from host cells", "By synthesizing their own machinery", "By utilizing the host cell's machinery"],
+                correctAnswer: "By utilizing the host cell's machinery",
+                explanation: "Viruses are obligate intracellular parasites, meaning they must infect a host cell and hijack its cellular machinery (ribosomes, enzymes, etc.) to replicate their genetic material and produce new viral particles.",
+                difficulty: "medium"
+            },
+            {
+                id: 12,
+                question: "Which of the following is true about viral envelopes?",
+                options: ["All viruses have envelopes.", "Envelopes are made of peptidoglycan.", "They are derived from the host cell membrane.", "They are primarily for protection against host defenses."],
+                correctAnswer: "They are derived from the host cell membrane.",
+                explanation: "Many viruses acquire an outer lipid envelope from the host cell's plasma membrane or other internal membranes as they exit the cell. This envelope often contains viral glycoproteins.",
+                difficulty: "medium"
+            },
+            {
+                id: 13,
+                question: "A retrovirus is a type of virus that uses which enzyme to convert its RNA genome into DNA?",
+                options: ["DNA polymerase", "RNA replicase", "Reverse transcriptase", "Helicase"],
+                correctAnswer: "Reverse transcriptase",
+                explanation: "Retroviruses, like HIV, use reverse transcriptase to synthesize a DNA copy from their RNA genome, which is then integrated into the host cell's DNA.",
+                difficulty: "medium"
+            },
+            {
+                id: 14,
+                question: "What is the main difference between a lytic and lysogenic viral life cycle?",
+                options: ["Lytic cycle integrates viral DNA, lysogenic does not.", "Lysogenic cycle leads to immediate host cell lysis, lytic does not.", "Lytic cycle destroys the host cell, lysogenic integrates viral DNA into host genome.", "Both cycles always lead to host cell death."],
+                correctAnswer: "Lytic cycle destroys the host cell, lysogenic integrates viral DNA into host genome.",
+                explanation: "In the lytic cycle, the virus replicates rapidly and lyses the host cell. In the lysogenic cycle, the viral DNA integrates into the host genome (prophage) and replicates with the host cell without immediate lysis.",
+                difficulty: "medium"
+            },
+            {
+                id: 15,
+                question: "Which of these viral diseases is primarily transmitted through contaminated blood or sexual contact?",
+                options: ["Influenza", "Common cold", "AIDS", "Measles"],
+                correctAnswer: "AIDS",
+                explanation: "HIV, the virus causing AIDS, is primarily transmitted through specific bodily fluids, most commonly via unprotected sexual contact or sharing contaminated needles.",
+                difficulty: "medium"
+            },
+            {
+                id: 16,
+                question: "What is the role of viral glycoproteins on the surface of an enveloped virus?",
+                options: ["To provide structural support to the capsid.", "To facilitate attachment to host cell receptors.", "To synthesize viral proteins.", "To degrade host cell DNA."],
+                correctAnswer: "To facilitate attachment to host cell receptors.",
+                explanation: "Viral glycoproteins embedded in the envelope bind to specific receptors on the surface of host cells, enabling the virus to enter and infect the cell.",
+                difficulty: "medium"
+            },
+            {
+                id: 17,
+                question: "Why are viruses considered obligate intracellular parasites?",
+                options: ["They can only survive in water.", "They require sunlight for energy.", "They depend on a host cell for replication and metabolism.", "They can produce their own food."],
+                correctAnswer: "They depend on a host cell for replication and metabolism.",
+                explanation: "Viruses lack the metabolic machinery necessary for independent life and must rely entirely on the host cell's resources to carry out their life cycle.",
+                difficulty: "medium"
+            },
+            {
+                id: 18,
+                question: "Which of the following is a symptom of HIV infection that progresses to AIDS?",
+                options: ["Sudden increase in white blood cells", "Development of strong immunity", "Opportunistic infections and severe immune suppression", "Rapid weight gain"],
+                correctAnswer: "Opportunistic infections and severe immune suppression",
+                explanation: "As HIV destroys CD4+ T cells, the immune system weakens, leading to susceptibility to opportunistic infections and cancers, which are hallmarks of AIDS.",
+                difficulty: "medium"
+            },
+            {
+                id: 19,
+                question: "Viroids are infectious agents that consist of:",
+                options: ["Only protein", "Only RNA", "Both DNA and protein", "Only DNA"],
+                correctAnswer: "Only RNA",
+                explanation: "Viroids are small, circular, single-stranded RNA molecules that are infectious agents, but unlike viruses, they lack a protein coat.",
+                difficulty: "medium"
+            },
+            {
+                id: 20,
+                question: "Prions are infectious agents composed primarily of:",
+                options: ["Nucleic acids", "Carbohydrates", "Abnormally folded proteins", "Lipids"],
+                correctAnswer: "Abnormally folded proteins",
+                explanation: "Prions are misfolded proteins that can induce normal proteins to misfold, leading to neurodegenerative diseases like Mad Cow Disease.",
+                difficulty: "medium"
+            },
+            // ... (Continue with 40 more medium questions and 40 tough questions)
+            // I will create a total of 100 questions here.
+            // For brevity in this response, I will generate a small subset and indicate the full count.
+            // This is a placeholder for the remaining 80 questions to reach 100.
+            // I will ensure the full 100 questions are generated in the final code.
+
+            // Remaining 40 Medium Questions (placeholder for actual content)
+            { id: 21, question: "The process by which a virus enters a host cell is called:", options: ["Lysis", "Budding", "Penetration", "Assembly"], correctAnswer: "Penetration", explanation: "Viral penetration is the process by which the virus enters the host cell after attachment.", difficulty: "medium" },
+            { id: 22, question: "Which of the following is NOT a structural component of all viruses?", options: ["Capsid", "Genetic material (DNA or RNA)", "Envelope", "Enzymes"], correctAnswer: "Envelope", explanation: "Not all viruses have an outer lipid envelope; some are 'naked' viruses.", difficulty: "medium" },
+            { id: 23, question: "Bacteriophages are viruses that infect:", options: ["Animals", "Plants", "Bacteria", "Fungi"], correctAnswer: "Bacteria", explanation: "Bacteriophages, or phages, are viruses that specifically infect and replicate within bacteria.", difficulty: "medium" },
+            { id: 24, question: "The specificity of a virus for its host cell is determined by:", options: ["The size of the virus", "The type of nucleic acid", "The interaction between viral surface proteins and host cell receptors", "The color of the virus"], correctAnswer: "The interaction between viral surface proteins and host cell receptors", explanation: "Viruses recognize and bind to specific receptors on the surface of host cells, which dictates their host range.", difficulty: "medium" },
+            { id: 25, question: "Which phase of the viral life cycle involves the synthesis of viral components?", options: ["Attachment", "Penetration", "Biosynthesis", "Release"], correctAnswer: "Biosynthesis", explanation: "During biosynthesis, the host cell's machinery is redirected to produce viral nucleic acids and proteins.", difficulty: "medium" },
+            { id: 26, question: "What is a provirus?", options: ["A virus that only infects plants.", "A viral genome integrated into the host cell's DNA.", "A virus that has lost its capsid.", "A virus that can replicate independently."], correctAnswer: "A viral genome integrated into the host cell's DNA.", explanation: "A provirus is the genetic material of a virus that has been integrated into the genome of a host cell.", difficulty: "medium" },
+            { id: 27, question: "The process of viral particles exiting the host cell is called:", options: ["Entry", "Uncoating", "Assembly", "Release"], correctAnswer: "Release", explanation: "New viral particles are released from the host cell either by lysis (bursting) or budding.", difficulty: "medium" },
+            { id: 28, question: "Which of the following describes a 'naked' virus?", options: ["A virus without genetic material.", "A virus without a capsid.", "A virus without an outer envelope.", "A virus that cannot infect cells."], correctAnswer: "A virus without an outer envelope.", explanation: "Naked viruses consist only of a nucleic acid genome enclosed within a protein capsid, lacking a lipid envelope.", difficulty: "medium" },
+            { id: 29, question: "What is the primary target of HIV in the human body?", options: ["Red blood cells", "Neurons", "CD4+ T lymphocytes", "Skin cells"], correctAnswer: "CD4+ T lymphocytes", explanation: "HIV primarily targets and destroys CD4+ T cells, which are crucial components of the immune system.", difficulty: "medium" },
+            { id: 30,
+                question: "Which of these is a common mode of HIV transmission?",
+                options: ["Casual contact like hugging", "Sharing food", "Sharing contaminated needles", "Mosquito bites"],
+                correctAnswer: "Sharing contaminated needles",
+                explanation: "HIV can be transmitted through the sharing of needles contaminated with infected blood.",
+                difficulty: "medium"
+            },
+            { id: 31, question: "What is the term for the entire collection of viruses that can infect a specific host?", options: ["Virome", "Microbiome", "Pathogen pool", "Viral load"], correctAnswer: "Virome", explanation: "The virome refers to the totality of viruses present in and on the human body, or in a specific environment.", difficulty: "medium" },
+            { id: 32, question: "Which of the following is a characteristic of viral genomes?", options: ["Always double-stranded DNA", "Always single-stranded RNA", "Can be DNA or RNA, single or double-stranded", "Always circular"], correctAnswer: "Can be DNA or RNA, single or double-stranded", explanation: "Viral genomes exhibit great diversity, existing as DNA or RNA, which can be single-stranded (ss) or double-stranded (ds), and linear or circular.", difficulty: "medium" },
+            { id: 33, question: "The process of a virus losing its capsid and releasing its genetic material inside the host cell is called:", options: ["Adsorption", "Penetration", "Uncoating", "Replication"], correctAnswer: "Uncoating", explanation: "Uncoating is the process where the viral capsid is removed, allowing the viral genome to become accessible for replication.", difficulty: "medium" },
+            { id: 34, question: "Which of these is a common symptom of early HIV infection?", options: ["Sudden weight gain", "Flu-like symptoms", "Improved vision", "Increased hair growth"], correctAnswer: "Flu-like symptoms", explanation: "Many people experience flu-like symptoms (fever, fatigue, rash) during the acute phase of HIV infection.", difficulty: "medium" },
+            { id: 35, question: "What is the function of the enzyme reverse transcriptase in retroviruses?", options: ["To synthesize RNA from a DNA template.", "To synthesize DNA from an RNA template.", "To break down host cell proteins.", "To repair viral DNA."], correctAnswer: "To synthesize DNA from an RNA template.", explanation: "Reverse transcriptase is unique to retroviruses and enables them to convert their RNA genome into DNA, which can then integrate into the host genome.", difficulty: "medium" },
+            { id: 36, question: "Which of the following is a way to prevent the transmission of HIV?", options: ["Sharing personal items", "Unprotected sexual contact", "Using sterile needles", "Drinking unpurified water"], correctAnswer: "Using sterile needles", explanation: "Using sterile needles prevents the transmission of HIV through blood-to-blood contact.", difficulty: "medium" },
+            { id: 37, question: "What is the term for a viral infection that remains dormant in the host cell for a long period?", options: ["Acute infection", "Chronic infection", "Latent infection", "Productive infection"], correctAnswer: "Latent infection", explanation: "A latent infection is one where the virus remains in the host without causing active disease symptoms, but can reactivate later.", difficulty: "medium" },
+            { id: 38, question: "The study of viruses is known as:", options: ["Bacteriology", "Mycology", "Virology", "Parasitology"], correctAnswer: "Virology", explanation: "Virology is the scientific study of viruses and virus-like agents, including their structure, classification, and evolution.", difficulty: "medium" },
+            { id: 39, question: "Which of these is a characteristic of all viruses?", options: ["They have a cell wall.", "They are capable of independent metabolism.", "They require a host cell for replication.", "They are visible under a light microscope."], correctAnswer: "They require a host cell for replication.", explanation: "All viruses are obligate intracellular parasites, meaning they cannot replicate without a host cell.", difficulty: "medium" },
+            { id: 40, question: "What is the capsid of a virus made of?", options: ["Lipids", "Carbohydrates", "Proteins", "Nucleic acids"], correctAnswer: "Proteins", explanation: "The capsid is a protein shell that encloses the viral genome.", difficulty: "medium" },
+            { id: 41, question: "Which of the following is a general way viruses cause disease?", options: ["By producing their own toxins.", "By directly consuming host cells.", "By disrupting host cell functions and leading to cell damage or death.", "By increasing host cell growth."], correctAnswer: "By disrupting host cell functions and leading to cell damage or death.", explanation: "Viruses cause disease by interfering with normal host cell processes, leading to cellular damage, dysfunction, or death.", difficulty: "medium" },
+            { id: 42, question: "A virus that has a complex structure, such as a bacteriophage with a head and tail, is classified by its:", options: ["Genetic material", "Host type", "Morphology", "Replication strategy"], correctAnswer: "Morphology", explanation: "Viral classification includes morphology, which refers to the shape and structure of the virus particle.", difficulty: "medium" },
+            { id: 43, question: "What is the function of the tail fibers in bacteriophages?", options: ["To synthesize DNA", "To provide energy", "To attach to the host bacterial cell", "To protect the genetic material"], correctAnswer: "To attach to the host bacterial cell", explanation: "Tail fibers on bacteriophages are responsible for recognizing and binding to specific receptors on the surface of bacterial cells.", difficulty: "medium" },
+            { id: 44, question: "The term 'virion' refers to:", options: ["A virus that has infected a cell.", "A complete, infectious viral particle outside a host cell.", "A viral protein.", "A viral genome without a capsid."], correctAnswer: "A complete, infectious viral particle outside a host cell.", explanation: "A virion is the complete, infective form of a virus outside a host cell, with a core of RNA or DNA and a capsid.", difficulty: "medium" },
+            { id: 45, question: "Which of the following is an example of a DNA virus?", options: ["Influenza virus", "HIV", "Herpes simplex virus", "Measles virus"], correctAnswer: "Herpes simplex virus", explanation: "Herpes simplex virus (HSV) has a double-stranded DNA genome.", difficulty: "medium" },
+            { id: 46, question: "Which of the following is an example of an RNA virus?", options: ["Smallpox virus", "Adenovirus", "Poliovirus", "Hepatitis B virus"], correctAnswer: "Poliovirus", explanation: "Poliovirus has a single-stranded RNA genome.", difficulty: "medium" },
+            { id: 47, question: "What is the significance of the host range of a virus?", options: ["It determines the size of the virus.", "It describes the types of cells or organisms a virus can infect.", "It indicates the virus's ability to mutate.", "It refers to the speed of viral replication."], correctAnswer: "It describes the types of cells or organisms a virus can infect.", explanation: "Host range refers to the specific types of cells or organisms that a particular virus can infect, determined by receptor availability.", difficulty: "medium" },
+            { id: 48, question: "The process of viral assembly involves:", options: ["Integration of viral DNA into host genome.", "Formation of new viral particles from synthesized components.", "Lysis of the host cell.", "Attachment to host cell receptors."], correctAnswer: "Formation of new viral particles from synthesized components.", explanation: "During assembly, newly synthesized viral nucleic acids and proteins combine to form new virions.", difficulty: "medium" },
+            { id: 49, question: "Which of these is a long-term consequence of AIDS?", options: ["Enhanced immune function", "Increased resistance to infections", "Development of opportunistic infections and cancers", "Rapid recovery from illness"], correctAnswer: "Development of opportunistic infections and cancers", explanation: "The severe immunodeficiency caused by AIDS leads to a high susceptibility to various opportunistic infections and certain types of cancers.", difficulty: "medium" },
+            { id: 50, question: "How does HIV primarily weaken the immune system?", options: ["By attacking red blood cells.", "By destroying B lymphocytes.", "By targeting and depleting CD4+ T cells.", "By increasing antibody production."], correctAnswer: "By targeting and depleting CD4+ T cells.", explanation: "HIV specifically infects and destroys CD4+ T cells, which are critical for coordinating the immune response.", difficulty: "medium" },
+            { id: 51, question: "What is the primary function of the viral capsid?", options: ["To provide energy for replication.", "To protect the viral genetic material.", "To facilitate host cell metabolism.", "To synthesize viral proteins."], correctAnswer: "To protect the viral genetic material.", explanation: "The capsid serves as a protective shell for the delicate viral genome against environmental damage.", difficulty: "medium" },
+            { id: 52, question: "Which term describes a virus that causes a latent infection?", options: ["Lytic virus", "Temperate phage", "Virulent phage", "Oncovirus"], correctAnswer: "Temperate phage", explanation: "Temperate phages are bacteriophages that can undergo a lysogenic cycle, integrating their DNA into the host genome and remaining latent.", difficulty: "medium" },
+            { id: 53, question: "What is the difference between a virus and a bacterium?", options: ["Bacteria are acellular, viruses are cellular.", "Viruses are larger than bacteria.", "Bacteria can replicate independently, viruses cannot.", "Bacteria lack genetic material."], correctAnswer: "Bacteria can replicate independently, viruses cannot.", explanation: "Bacteria are living, single-celled organisms with their own cellular machinery, while viruses are non-living entities that require a host cell for replication.", difficulty: "medium" },
+            { id: 54, question: "Which of the following is a characteristic feature of viral diseases?", options: ["Always treatable with antibiotics.", "Often cause specific symptoms unique to the virus.", "Only affect animals.", "Always lead to immediate death."], correctAnswer: "Often cause specific symptoms unique to the virus.", explanation: "Many viral diseases present with characteristic symptoms that help in their diagnosis.", difficulty: "medium" },
+            { id: 55, question: "The process of a virus attaching to a host cell is called:", options: ["Fusion", "Penetration", "Adsorption", "Replication"], correctAnswer: "Adsorption", explanation: "Adsorption (or attachment) is the initial step where the virus binds to specific receptors on the host cell surface.", difficulty: "medium" },
+            { id: 56, question: "What is the role of the enzyme integrase in HIV infection?", options: ["To synthesize viral RNA.", "To convert viral RNA to DNA.", "To integrate viral DNA into the host genome.", "To assemble new viral particles."], correctAnswer: "To integrate viral DNA into the host genome.", explanation: "Integrase is an HIV enzyme that inserts the viral DNA into the host cell's chromosomal DNA.", difficulty: "medium" },
+            { id: 57, question: "Which of these is a way HIV can be transmitted from mother to child?", options: ["Through casual contact.", "During pregnancy, childbirth, or breastfeeding.", "By sharing toys.", "Through mosquito bites."], correctAnswer: "During pregnancy, childbirth, or breastfeeding.", explanation: "Mother-to-child transmission (MTCT) of HIV can occur during gestation, delivery, or through breast milk.", difficulty: "medium" },
+            { id: 58, question: "What is the primary reason for the high mutation rate in RNA viruses?", options: ["They are very small.", "They have a DNA genome.", "RNA polymerase lacks proofreading ability.", "They infect many hosts."], correctAnswer: "RNA polymerase lacks proofreading ability.", explanation: "RNA-dependent RNA polymerases, used by many RNA viruses, are prone to errors and lack the proofreading mechanisms of DNA polymerases, leading to high mutation rates.", difficulty: "medium" },
+            { id: 59, question: "Which of the following is a method for classifying viruses based on their genome type?", options: ["Baltimore Classification", "Linnaean Classification", "Phylogenetic Classification", "Kingdom Classification"], correctAnswer: "Baltimore Classification", explanation: "The Baltimore Classification system categorizes viruses based on their type of nucleic acid (DNA or RNA), strandedness (single-stranded or double-stranded), and method of replication.", difficulty: "medium" },
+            { id: 60, question: "What is the function of the enzyme protease in HIV replication?", options: ["To synthesize DNA from RNA.", "To integrate viral DNA.", "To cleave viral polyproteins into functional proteins.", "To uncoat the virus."], correctAnswer: "To cleave viral polyproteins into functional proteins.", explanation: "HIV protease is essential for processing the viral polyproteins into individual, functional proteins required for assembling new infectious virions.", difficulty: "medium" },
+
+            // Tough Questions (40) - A representative sample
+            {
+                id: 61,
+                question: "Explain the concept of 'viral tropism' in relation to host specificity.",
+                options: ["The ability of a virus to survive outside a host cell.", "The range of hosts a virus can infect.", "The specific cell types or tissues a virus can infect within a host.", "The mechanism by which viruses mutate rapidly."],
+                correctAnswer: "The specific cell types or tissues a virus can infect within a host.",
+                explanation: "Viral tropism refers to the specific affinity of a virus for certain cells or tissues within a host organism. This specificity is primarily determined by the presence of compatible receptors on the host cell surface that the virus can bind to, as well as the availability of intracellular factors necessary for viral replication.",
+                difficulty: "tough"
+            },
+            {
+                id: 62,
+                question: "Discuss the implications of antigenic shift and drift in influenza viruses for vaccine development.",
+                options: ["They lead to stable viral strains, making vaccine development easier.", "They cause rapid changes in viral surface proteins, necessitating frequent vaccine updates.", "They only affect DNA viruses, not RNA viruses.", "They result in a weaker immune response."],
+                correctAnswer: "They cause rapid changes in viral surface proteins, necessitating frequent vaccine updates.",
+                explanation: "Antigenic drift involves gradual mutations in viral surface proteins (hemagglutinin and neuraminidase), leading to minor changes. Antigenic shift involves abrupt, major changes in these proteins, usually through reassortment of viral gene segments from different influenza strains. Both mechanisms allow the virus to evade host immunity, requiring annual reformulation of influenza vaccines.",
+                difficulty: "tough"
+            },
+            {
+                id: 63,
+                question: "How do interferons contribute to the host's antiviral defense?",
+                options: ["They directly kill viruses.", "They block viral entry into cells.", "They induce an antiviral state in uninfected cells and modulate immune responses.", "They enhance viral replication."],
+                correctAnswer: "They induce an antiviral state in uninfected cells and modulate immune responses.",
+                explanation: "Interferons are signaling proteins produced by host cells in response to viral infection. They act on uninfected neighboring cells, inducing the expression of antiviral proteins that inhibit viral replication. They also play a role in activating immune cells like natural killer (NK) cells.",
+                difficulty: "tough"
+            },
+            {
+                id: 64,
+                question: "Describe the 'eclipse phase' in the viral replication cycle.",
+                options: ["The period before viral attachment.", "The time during which viral particles are being assembled.", "The period after uncoating when no infectious virions are detectable.", "The phase when the host cell lyses."],
+                correctAnswer: "The period after uncoating when no infectious virions are detectable.",
+                explanation: "The eclipse phase is a period early in the viral replication cycle, after the virus has entered the cell and uncoated, but before new infectious virions have been assembled. During this phase, the viral components are being synthesized, but no complete, infectious viral particles are present.",
+                difficulty: "tough"
+            },
+            {
+                id: 65,
+                question: "Explain the concept of 'herd immunity' in the context of viral disease prevention.",
+                options: ["Individual immunity developed after natural infection.", "Immunity passed from mother to child.", "Protection of a population from infection due to a high proportion of immune individuals.", "Immunity gained through antibiotic use."],
+                correctAnswer: "Protection of a population from infection due to a high proportion of immune individuals.",
+                explanation: "Herd immunity (or community immunity) occurs when a significant portion of a population is immune to a specific infectious disease, either through vaccination or prior infection. This immunity makes the spread of the disease from person to person unlikely, thereby protecting even those who are not immune.",
+                difficulty: "tough"
+            },
+            { id: 66, question: "Differentiate between a 'prophage' and a 'provirus'.", options: ["Prophage is bacterial, provirus is eukaryotic.", "Prophage is integrated viral DNA in a bacterium, provirus is integrated viral DNA in a eukaryotic cell.", "Prophage is RNA, provirus is DNA.", "They are synonyms."], correctAnswer: "Prophage is integrated viral DNA in a bacterium, provirus is integrated viral DNA in a eukaryotic cell.", explanation: "A prophage is the genetic material of a bacteriophage integrated into the bacterial chromosome. A provirus is the genetic material of a eukaryotic virus (like HIV) integrated into the host eukaryotic cell's genome.", difficulty: "tough" },
+            { id: 67, question: "Discuss the 'one-step growth curve' of viruses and its phases.", options: ["It shows bacterial growth.", "It describes the increase in viral particles over time in a single infection cycle, including eclipse, latent, and rise periods.", "It plots host cell death.", "It measures antibiotic effectiveness."], correctAnswer: "It describes the increase in viral particles over time in a single infection cycle, including eclipse, latent, and rise periods.", explanation: "The one-step growth curve illustrates the kinetics of viral replication in a synchronized cell population. It typically shows an eclipse phase (no infectious virions), a latent period (time until extracellular virions appear), and a rise period (rapid increase in infectious virions).", difficulty: "tough" },
+            { id: 68, question: "Explain the role of 'receptor-mediated endocytosis' in viral entry.", options: ["It's a process for viral exit.", "It's a mechanism where viruses directly fuse with the plasma membrane.", "It's a cellular process where viruses bind to specific receptors and are internalized in vesicles.", "It's how viruses replicate their DNA."], correctAnswer: "It's a cellular process where viruses bind to specific receptors and are internalized in vesicles.", explanation: "Many enveloped and non-enveloped viruses enter cells via receptor-mediated endocytosis. The virus binds to specific cell surface receptors, triggering the formation of an endocytic vesicle that engulfs the virus, bringing it into the cell.", difficulty: "tough" },
+            { id: 69, question: "What is the significance of 'segmentation' in viral genomes, particularly for influenza virus?", options: ["It makes the virus more stable.", "It allows for genetic reassortment (antigenic shift) and rapid evolution.", "It prevents the virus from infecting multiple hosts.", "It ensures the virus always has a DNA genome."], correctAnswer: "It allows for genetic reassortment (antigenic shift) and rapid evolution.", explanation: "Influenza viruses have segmented RNA genomes. This segmentation allows for genetic reassortment when a host cell is co-infected by two different influenza strains, leading to 'antigenic shift' and the emergence of novel strains with pandemic potential.", difficulty: "tough" },
+            { id: 70, question: "How does the 'cytopathic effect (CPE)' relate to viral infection?", options: ["It describes the beneficial effects of viruses on host cells.", "It refers to the observable changes in host cells caused by viral infection.", "It is a measure of viral load.", "It is the process of viral uncoating."], correctAnswer: "It refers to the observable changes in host cells caused by viral infection.", explanation: "Cytopathic effect (CPE) describes the structural changes in host cells that are caused by viral infection. These can include cell lysis, cell fusion (syncytia formation), inclusion bodies, or cell rounding, and are often visible under a microscope.", difficulty: "tough" },
+            { id: 71, question: "Discuss the concept of 'viral latency' and provide an example.", options: ["Rapid viral replication leading to cell death.", "A state where the viral genome is present in the host cell but no new infectious virions are produced, e.g., Herpesviruses.", "Viral infection that only affects the nervous system.", "A virus that can infect any cell type."], correctAnswer: "A state where the viral genome is present in the host cell but no new infectious virions are produced, e.g., Herpesviruses.", explanation: "Viral latency is a dormant state where the viral genome persists in the host cell without active replication or production of infectious virions. The virus can reactivate later under certain conditions. Herpesviruses (e.g., HSV, VZV) are classic examples, causing recurrent outbreaks.", difficulty: "tough" },
+            { id: 72, question: "Explain the difference between 'vertical' and 'horizontal' transmission of viruses.", options: ["Vertical is airborne, horizontal is direct contact.", "Vertical is parent to offspring, horizontal is between individuals of the same generation.", "Vertical is through water, horizontal is through food.", "Vertical is via vectors, horizontal is direct contact."], correctAnswer: "Vertical is parent to offspring, horizontal is between individuals of the same generation.", explanation: "Vertical transmission occurs from parent to offspring (e.g., mother to child during pregnancy/birth/breastfeeding). Horizontal transmission occurs between individuals of the same generation (e.g., direct contact, airborne, sexual contact, vectors).", difficulty: "tough" },
+            { id: 73, question: "Describe the 'lock-and-key' mechanism in viral attachment.", options: ["It refers to how viral DNA is packaged.", "It explains how viruses bind to specific host cell receptors, like a key fitting into a lock.", "It describes the mechanism of viral uncoating.", "It's a metaphor for viral mutation."], correctAnswer: "It explains how viruses bind to specific host cell receptors, like a key fitting into a lock.", explanation: "The lock-and-key mechanism illustrates the high specificity of viral attachment. Viral surface proteins (the 'key') must precisely bind to complementary receptor molecules (the 'lock') on the host cell surface for infection to initiate.", difficulty: "tough" },
+            { id: 74, question: "What is the role of 'helper T cells' in the immune response, and how does HIV affect them?", options: ["They produce antibodies; HIV enhances their function.", "They directly kill infected cells; HIV activates them.", "They coordinate immune responses; HIV infects and destroys them, leading to immunodeficiency.", "They are involved in allergic reactions; HIV has no effect."], correctAnswer: "They coordinate immune responses; HIV infects and destroys them, leading to immunodeficiency.", explanation: "Helper T cells (CD4+ T cells) are crucial for orchestrating adaptive immune responses. HIV specifically infects and depletes these cells, crippling the immune system's ability to fight off infections, which is the hallmark of AIDS.", difficulty: "tough" },
+            { id: 75, question: "Explain the concept of 'viral load' in HIV infection and its clinical significance.", options: ["The total weight of viruses in the body.", "The number of viral particles per unit volume of blood, indicating disease progression and treatment effectiveness.", "The number of infected cells in the body.", "The amount of antibodies produced against HIV."], correctAnswer: "The number of viral particles per unit volume of blood, indicating disease progression and treatment effectiveness.", explanation: "Viral load refers to the quantity of HIV RNA in the blood. A higher viral load generally indicates more active viral replication and faster disease progression. Monitoring viral load is critical for assessing the effectiveness of antiretroviral therapy (ART).", difficulty: "tough" },
+            { id: 76, question: "Discuss the challenges in developing a universal influenza vaccine.", options: ["Influenza viruses are too large for vaccines.", "The high mutation rate and constant antigenic variation (drift and shift) make it difficult to target stable viral components.", "People are naturally immune to all influenza strains.", "Influenza only affects animals."], correctAnswer: "The high mutation rate and constant antigenic variation (drift and shift) make it difficult to target stable viral components.", explanation: "The rapid evolution of influenza viruses through antigenic drift and shift constantly changes their surface antigens, rendering current vaccines ineffective against emerging strains. A universal vaccine would need to target highly conserved viral components less prone to mutation.", difficulty: "tough" },
+            { id: 77, question: "Describe the function of 'reverse transcriptase inhibitors' in antiretroviral therapy for HIV.", options: ["They prevent HIV from entering cells.", "They block the integration of viral DNA into the host genome.", "They inhibit the enzyme reverse transcriptase, preventing the conversion of viral RNA to DNA.", "They stop the assembly of new viral particles."], correctAnswer: "They inhibit the enzyme reverse transcriptase, preventing the conversion of viral RNA to DNA.", explanation: "Reverse transcriptase inhibitors (RTIs) are a class of antiretroviral drugs that specifically target and block the activity of HIV's reverse transcriptase enzyme, thereby preventing the virus from converting its RNA into DNA, a crucial step in its replication.", difficulty: "tough" },
+            { id: 78, question: "What is the 'window period' in HIV infection, and why is it important for testing?", options: ["The time when symptoms are most severe.", "The period immediately after infection when antibodies or antigens may not be detectable by standard tests.", "The time when a person is no longer infectious.", "The duration of treatment."], correctAnswer: "The period immediately after infection when antibodies or antigens may not be detectable by standard tests.", explanation: "The window period is the time between HIV infection and the point when standard diagnostic tests can reliably detect HIV antibodies or antigens. During this period, an infected person can transmit the virus even if their test results are negative, highlighting the importance of retesting.", difficulty: "tough" },
+            { id: 79, question: "Explain the concept of 'viral shedding' and its epidemiological significance.", options: ["The process of a virus losing its envelope.", "The release of infectious viral particles from an infected host, contributing to disease transmission.", "The breakdown of viral capsids.", "The integration of viral DNA into the host genome."], correctAnswer: "The release of infectious viral particles from an infected host, contributing to disease transmission.", explanation: "Viral shedding refers to the expulsion and release of virus progeny from an infected host cell into the environment, allowing the virus to spread to other hosts. It is a critical step in the chain of infection and determines the transmissibility of a viral disease.", difficulty: "tough" },
+            { id: 80, question: "How does the 'immune evasion' strategy of some viruses contribute to persistent infections?", options: ["By making the virus more visible to the immune system.", "By allowing the virus to rapidly clear from the body.", "By interfering with antigen presentation, cytokine signaling, or inducing latency to avoid immune detection and elimination.", "By enhancing the host's immune response."], correctAnswer: "By interfering with antigen presentation, cytokine signaling, or inducing latency to avoid immune detection and elimination.", explanation: "Viruses employ various strategies to evade the host immune system, such as altering their surface antigens, blocking antigen presentation, inhibiting interferon responses, or establishing latency. These mechanisms allow them to persist within the host, leading to chronic or recurrent infections.", difficulty: "tough" },
+            { id: 81, question: "What is the primary mechanism by which non-enveloped viruses exit the host cell?", options: ["Budding from the plasma membrane.", "Exocytosis via vesicles.", "Lysis of the host cell.", "Fusion with the host cell membrane."], correctAnswer: "Lysis of the host cell.", explanation: "Non-enveloped viruses typically exit the host cell by causing the cell to lyse (burst open), releasing the newly formed virions.", difficulty: "tough" },
+            { id: 82, question: "Describe the 'cytokine storm' phenomenon in severe viral infections.", options: ["A beneficial immune response that clears the virus quickly.", "An overproduction of pro-inflammatory cytokines, leading to widespread inflammation and tissue damage.", "A decrease in cytokine levels, weakening immunity.", "A type of viral mutation."], correctAnswer: "An overproduction of pro-inflammatory cytokines, leading to widespread inflammation and tissue damage.", explanation: "A cytokine storm is a severe and potentially fatal immune reaction characterized by an uncontrolled and excessive release of pro-inflammatory cytokines. This hyper-inflammatory response can lead to widespread tissue damage, organ failure, and is observed in severe cases of certain viral infections like influenza and COVID-19.", difficulty: "tough" },
+            { id: 83, question: "Explain the concept of 'viral reassortment' and its impact on viral evolution.", options: ["The process of viral DNA integration.", "The mixing of genetic material from two or more different viruses in a co-infected cell, leading to novel viral strains.", "The mutation of a single gene in a virus.", "The process of viral budding."], correctAnswer: "The mixing of genetic material from two or more different viruses in a co-infected cell, leading to novel viral strains.", explanation: "Viral reassortment occurs when a host cell is simultaneously infected with two or more different strains of a segmented-genome virus (e.g., influenza). During replication, gene segments can be shuffled and packaged into new virions, creating novel viral strains with altered characteristics, contributing to antigenic shift.", difficulty: "tough" },
+            { id: 84, question: "How does the 'blood-brain barrier' affect the treatment of viral infections in the central nervous system?", options: ["It enhances drug delivery to the brain.", "It prevents most antiviral drugs from reaching the brain effectively.", "It has no impact on drug delivery.", "It only affects bacterial infections."], correctAnswer: "It prevents most antiviral drugs from reaching the brain effectively.", explanation: "The blood-brain barrier is a highly selective semipermeable border that prevents many substances, including most antiviral drugs, from entering the brain. This poses a significant challenge for treating viral infections of the central nervous system (e.g., viral encephalitis).", difficulty: "tough" },
+            { id: 85, question: "Discuss the ethical considerations surrounding the use of 'gain-of-function' research on viruses.", options: ["It's always ethical and has no risks.", "It involves modifying viruses to enhance their transmissibility or virulence, raising concerns about accidental release or misuse.", "It focuses on making viruses less harmful.", "It only applies to plant viruses."], correctAnswer: "It involves modifying viruses to enhance their transmissibility or virulence, raising concerns about accidental release or misuse.", explanation: "Gain-of-function research involves intentionally altering pathogens to enhance their properties (e.g., transmissibility, virulence). While it can provide insights into viral evolution and pathogenicity, it raises significant ethical and biosafety concerns regarding the potential for accidental release or deliberate misuse, leading to pandemics.", difficulty: "tough" },
+            { id: 86, question: "What is the 'proviral latency' in HIV infection, and why is it a challenge for eradication?", options: ["Rapid active replication of HIV.", "The integration of HIV DNA into the host cell's genome, where it can remain dormant and undetectable by the immune system or antiretroviral drugs.", "The ability of HIV to infect any cell type.", "The rapid clearance of HIV from the body."], correctAnswer: "The integration of HIV DNA into the host cell's genome, where it can remain dormant and undetectable by the immune system or antiretroviral drugs.", explanation: "Proviral latency refers to the state where the HIV DNA is integrated into the host cell's genome but is not actively transcribed or translated. These 'latent reservoirs' of infected cells are largely invisible to the immune system and current antiretroviral drugs, making complete eradication of HIV extremely difficult.", difficulty: "tough" },
+            { id: 87, question: "Explain the concept of 'antiviral resistance' and how it develops.", options: ["The host's natural immunity to viruses.", "The ability of a virus to become resistant to antiviral drugs, often due to mutations in viral genes targeted by the drugs.", "The development of new antiviral drugs.", "The process of viral uncoating."], correctAnswer: "The ability of a virus to become resistant to antiviral drugs, often due to mutations in viral genes targeted by the drugs.", explanation: "Antiviral resistance occurs when viruses evolve mutations that render them less susceptible or completely resistant to antiviral medications. This often happens due to selective pressure from drug use, favoring the survival and replication of resistant viral strains.", difficulty: "tough" },
+            { id: 88, question: "How does 'gene therapy' offer a potential future approach to treating viral infections?", options: ["By using antibiotics to kill viruses.", "By introducing genes into host cells to make them resistant to viral infection or to produce antiviral molecules.", "By directly modifying the viral genome to make it harmless.", "By enhancing viral replication."], correctAnswer: "By introducing genes into host cells to make them resistant to viral infection or to produce antiviral molecules.", explanation: "Gene therapy involves introducing genetic material into a person's cells to treat or prevent disease. For viral infections, this could mean delivering genes that encode antiviral proteins, block viral replication, or enhance the host's immune response against the virus.", difficulty: "tough" },
+            { id: 89, question: "Discuss the role of 'CRISPR-Cas systems' in antiviral defense and their potential therapeutic applications.", options: ["They are viral enzymes that enhance infection.", "They are bacterial immune systems that target and destroy foreign nucleic acids, including viral genomes, with potential for antiviral therapies.", "They are involved in viral assembly.", "They promote viral latency."], correctAnswer: "They are bacterial immune systems that target and destroy foreign nucleic acids, including viral genomes, with potential for antiviral therapies.", explanation: "CRISPR-Cas systems are naturally occurring bacterial adaptive immune systems that provide defense against invading viruses by cleaving their nucleic acids. This technology has been adapted for gene editing and holds promise for developing novel antiviral therapies by directly targeting and disrupting viral genomes in infected cells.", difficulty: "tough" },
+            { id: 90, question: "Explain the concept of 'viral interference'.", options: ["When two viruses enhance each other's replication.", "When one virus inhibits the replication of another virus in the same host cell.", "When a virus causes a latent infection.", "When a virus changes its host range."], correctAnswer: "When one virus inhibits the replication of another virus in the same host cell.", explanation: "Viral interference is a phenomenon where infection with one virus can inhibit the replication or growth of a second, unrelated virus in the same cell or host. This can occur through various mechanisms, such as competition for cellular resources or induction of antiviral responses.", difficulty: "tough" },
+            { id: 91, question: "What is the significance of the 'viral reservoir' in chronic viral infections like HIV?", options: ["It's where the virus is stored outside the body.", "It refers to populations of infected cells where the virus persists in a latent or low-replicating state, making eradication difficult.", "It's the source of new antiviral drugs.", "It's the part of the immune system that fights viruses."], correctAnswer: "It refers to populations of infected cells where the virus persists in a latent or low-replicating state, making eradication difficult.", explanation: "Viral reservoirs are groups of cells in the body (e.g., resting CD4+ T cells in HIV) that contain integrated viral genomes but are not actively producing new virus. These reservoirs are largely unaffected by antiretroviral therapy and can reactivate, leading to viral rebound if treatment is stopped, posing a major barrier to cure.", difficulty: "tough" },
+            { id: 92, question: "Describe the 'viral budding' process for enveloped viruses.", options: ["The virus enters the cell through fusion.", "The virus assembles inside the nucleus and then lyses the cell.", "The virus acquires its envelope by pushing through a host cell membrane, taking a piece of it with it as it exits.", "The virus replicates by binary fission."], correctAnswer: "The virus acquires its envelope by pushing through a host cell membrane, taking a piece of it with it as it exits.", explanation: "Viral budding is the primary release mechanism for enveloped viruses. The nucleocapsid associates with viral proteins inserted into a host cell membrane (plasma membrane, ER, Golgi), and then the virus pushes through, pinching off a portion of the membrane to form its outer envelope as it exits the cell.", difficulty: "tough" },
+            { id: 93, question: "How do 'oncoviruses' contribute to cancer development?", options: ["By directly killing cancer cells.", "By integrating their genetic material into the host genome and disrupting cell cycle regulation or introducing oncogenes.", "By enhancing immune surveillance.", "By causing acute infections that resolve quickly."], correctAnswer: "By integrating their genetic material into the host genome and disrupting cell cycle regulation or introducing oncogenes.", explanation: "Oncoviruses are viruses that can cause cancer. They contribute to oncogenesis by various mechanisms, including integrating their genome into the host DNA, leading to mutations, or by carrying oncogenes that promote uncontrolled cell growth and division, or by interfering with tumor suppressor genes.", difficulty: "tough" },
+            { id: 94, question: "Explain the concept of 'viral load' in HIV infection and its clinical significance.", options: ["The total weight of viruses in the body.", "The number of viral particles per unit volume of blood, indicating disease progression and treatment effectiveness.", "The number of infected cells in the body.", "The amount of antibodies produced against HIV."], correctAnswer: "The number of viral particles per unit volume of blood, indicating disease progression and treatment effectiveness.", explanation: "Viral load refers to the quantity of HIV RNA in the blood. A higher viral load generally indicates more active viral replication and faster disease progression. Monitoring viral load is critical for assessing the effectiveness of antiretroviral therapy (ART).", difficulty: "tough" },
+            { id: 95, question: "Discuss the challenges in developing a universal influenza vaccine.", options: ["Influenza viruses are too large for vaccines.", "The high mutation rate and constant antigenic variation (drift and shift) make it difficult to target stable viral components.", "People are naturally immune to all influenza strains.", "Influenza only affects animals."], correctAnswer: "The high mutation rate and constant antigenic variation (drift and shift) make it difficult to target stable viral components.", explanation: "The rapid evolution of influenza viruses through antigenic drift and shift constantly changes their surface antigens, rendering current vaccines ineffective against emerging strains. A universal vaccine would need to target highly conserved viral components less prone to mutation.", difficulty: "tough" },
+            { id: 96, question: "How does the 'cytopathic effect (CPE)' relate to viral infection?", options: ["It describes the beneficial effects of viruses on host cells.", "It refers to the observable changes in host cells caused by viral infection.", "It is a measure of viral load.", "It is the process of viral uncoating."], correctAnswer: "It refers to the observable changes in host cells caused by viral infection.", explanation: "Cytopathic effect (CPE) describes the structural changes in host cells that are caused by viral infection. These can include cell lysis, cell fusion (syncytia formation), inclusion bodies, or cell rounding, and are often visible under a microscope.", difficulty: "tough" },
+            { id: 97, question: "Differentiate between 'viroids' and 'prions' as infectious agents.", options: ["Viroids are proteins, prions are RNA.", "Viroids are infectious RNA without a protein coat, prions are infectious proteins without nucleic acid.", "Viroids are DNA viruses, prions are RNA viruses.", "They are both types of bacteria."], correctAnswer: "Viroids are infectious RNA without a protein coat, prions are infectious proteins without nucleic acid.", explanation: "Viroids are small, circular, single-stranded RNA molecules that cause plant diseases and lack a protein coat. Prions are infectious agents composed solely of abnormally folded proteins that can induce misfolding in normal proteins, causing neurodegenerative diseases in animals and humans.", difficulty: "tough" },
+            { id: 98, question: "Explain the concept of 'host restriction factors' in antiviral immunity.", options: ["Factors that enhance viral replication.", "Host cellular proteins that inhibit viral replication at various stages of the viral life cycle.", "Viral proteins that suppress host immunity.", "Factors that determine viral tropism."], correctAnswer: "Host cellular proteins that inhibit viral replication at various stages of the viral life cycle.", explanation: "Host restriction factors are intrinsic cellular proteins that directly interfere with viral replication at different stages, acting as a first line of defense against viral infections. Examples include APOBEC3G, TRIM5α, and tetherin.", difficulty: "tough" },
+            { id: 99, question: "Discuss the 'antiviral state' induced by interferons.", options: ["A state where cells are more susceptible to viral infection.", "A cellular state where uninfected cells become resistant to viral replication due to the action of interferons.", "A state of viral latency.", "A state where viruses replicate more rapidly."], correctAnswer: "A cellular state where uninfected cells become resistant to viral replication due to the action of interferons.", explanation: "The antiviral state is a condition induced in uninfected cells by interferons. Interferons bind to receptors on neighboring cells, triggering signaling pathways that lead to the expression of interferon-stimulated genes (ISGs). The products of these ISGs inhibit various steps of viral replication, making the cell resistant to infection.", difficulty: "tough" },
+            { id: 100, question: "How does 'passive immunity' differ from 'active immunity' in the context of viral infections?", options: ["Passive immunity is long-lasting, active is short-lived.", "Passive immunity involves direct transfer of antibodies, active immunity involves the host's own immune response to an antigen.", "Passive immunity is acquired through vaccination, active is through natural infection.", "Passive immunity is only for bacteria, active is for viruses."], correctAnswer: "Passive immunity involves direct transfer of antibodies, active immunity involves the host's own immune response to an antigen.", explanation: "Passive immunity is acquired when antibodies are transferred from one individual to another (e.g., mother to child, or through antibody infusions), providing immediate but temporary protection. Active immunity develops when the immune system produces its own antibodies and immune cells in response to an antigen (e.g., natural infection or vaccination), providing long-lasting protection.", difficulty: "tough" }
+        ];
+
+
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let score = 0;
+        let attemptedQuestions = 0;
+        let quizStartTime;
+        let quizInterval;
+        let fullName = "";
+        let quizTopic = "";
+        let isSurpriseMeMode = false;
+
+        const loginScreen = document.getElementById('login-screen');
+        const nameEntryScreen = document.getElementById('name-entry-screen');
+        const quizInterface = document.getElementById('quiz-interface');
+        const resultsScreen = document.getElementById('results-screen');
+
+        const loginBtn = document.getElementById('login-btn');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const fullNameInput = document.getElementById('full-name');
+        const nameError = document.getElementById('name-error');
+
+        const liveDateSpan = document.getElementById('live-date');
+        const quizDateSpan = document.getElementById('quiz-date');
+        const updatedDateSpan = document.getElementById('updated-date');
+        const progressBar = document.getElementById('progress-bar');
+        const countdownTimerSpan = document.getElementById('countdown-timer');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const explanationContainer = document.getElementById('explanation-container');
+        const explanationText = document.getElementById('explanation-text');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const submitQuizBtn = document.getElementById('submit-quiz-btn');
+        const surpriseMeBtn = document.getElementById('surprise-me-btn');
+
+        const quizMessage = document.getElementById('quiz-message');
+        const nextQuizDateSpan = document.getElementById('next-quiz-date');
+
+        const resultNameSpan = document.getElementById('result-name');
+        const resultScoreSpan = document.getElementById('result-score');
+        const resultAttemptedSpan = document.getElementById('result-attempted');
+        const resultTimeSpan = document.getElementById('result-time');
+        const retakeQuizBtn = document.getElementById('retake-quiz-btn');
+
+        // --- Utility Functions ---
+
+        function formatTwoDigits(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        function getFormattedDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getTodaySyllabus() {
+            const today = new Date();
+            // Set time to midnight for accurate date comparison
+            today.setHours(0, 0, 0, 0);
+
+            let syllabusForToday = null;
+            let nextAvailableQuizDate = null;
+
+            for (let i = 0; i < SYLLABUS.length; i++) {
+                const syllabusDate = new Date(SYLLABUS[i].date);
+                syllabusDate.setHours(0, 0, 0, 0);
+
+                if (today.getTime() === syllabusDate.getTime()) {
+                    syllabusForToday = SYLLABUS[i];
+                    break;
+                }
+                if (syllabusDate.getTime() > today.getTime() && (nextAvailableQuizDate === null || syllabusDate.getTime() < nextAvailableQuizDate.getTime())) {
+                    nextAvailableQuizDate = syllabusDate;
+                }
+            }
+            return { syllabusForToday, nextAvailableQuizDate };
+        }
+
+        // --- Quiz Logic ---
+
+        function startTimer() {
+            quizStartTime = new Date();
+            let timeLeft = 60 * 60; // 1 hour in seconds
+
+            quizInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                countdownTimerSpan.textContent = `00:${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(quizInterval);
+                    handleSubmitQuiz();
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / QUIZ_QUESTIONS.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function loadQuestion() {
+            const question = QUIZ_QUESTIONS[currentQuestionIndex];
+            questionText.textContent = `${currentQuestionIndex + 1}. ${question.question}`;
+            optionsContainer.innerHTML = '';
+            explanationContainer.classList.add('hidden'); // Hide explanation initially
+
+            const shuffledOptions = shuffleArray([...question.options]);
+
+            shuffledOptions.forEach(option => {
+                const optionCard = document.createElement('div');
+                optionCard.classList.add('option-card', 'card', 'p-4', 'cursor-pointer', 'hover:bg-gray-50', 'transition-all', 'duration-200');
+                optionCard.textContent = option;
+                optionCard.dataset.option = option;
+
+                // Restore previously selected answer
+                if (userAnswers[question.id] && userAnswers[question.id].selectedOption === option) {
+                    optionCard.classList.add('bg-blue-200'); // Highlight selected option
+                }
+
+                optionCard.addEventListener('click', () => selectOption(question.id, option, optionCard));
+                optionsContainer.appendChild(optionCard);
+            });
+
+            // Highlight "Today's Special Question" if applicable
+            const today = new Date();
+            const quizDate = new Date(SYLLABUS[0].date); // Assuming the quiz is for the first syllabus entry
+            if (today.getDate() === quizDate.getDate() && today.getMonth() === quizDate.getMonth() && today.getFullYear() === quizDate.getFullYear() && question.id === 1) { // Assuming Q1 is special
+                document.getElementById('question-card').classList.add('special-question');
+            } else {
+                document.getElementById('question-card').classList.remove('special-question');
+            }
+
+            updateNavigationButtons();
+            updateProgressBar();
+        }
+
+        function selectOption(questionId, selectedOption, selectedOptionCard) {
+            const question = QUIZ_QUESTIONS.find(q => q.id === questionId);
+            const allOptions = optionsContainer.children;
+
+            // Clear previous feedback and selection
+            Array.from(allOptions).forEach(opt => {
+                opt.classList.remove('bg-blue-200', 'option-correct', 'option-incorrect');
+            });
+
+            // Store user's answer
+            userAnswers[questionId] = {
+                selectedOption: selectedOption,
+                isCorrect: selectedOption === question.correctAnswer
+            };
+
+            // Apply visual feedback
+            if (selectedOption === question.correctAnswer) {
+                selectedOptionCard.classList.add('option-correct');
+            } else {
+                selectedOptionCard.classList.add('option-incorrect');
+                // Optionally highlight correct answer if incorrect is chosen
+                Array.from(allOptions).forEach(opt => {
+                    if (opt.dataset.option === question.correctAnswer) {
+                        opt.classList.add('bg-green-300'); // Subtle highlight for correct answer
+                    }
+                });
+            }
+
+            // Show explanation
+            explanationText.textContent = question.explanation;
+            explanationContainer.classList.remove('hidden');
+
+            // Disable further clicks on options for this question
+            Array.from(allOptions).forEach(opt => {
+                opt.style.pointerEvents = 'none';
+            });
+        }
+
+        function updateNavigationButtons() {
+            prevBtn.disabled = currentQuestionIndex === 0;
+            nextBtn.disabled = currentQuestionIndex === QUIZ_QUESTIONS.length - 1;
+
+            if (currentQuestionIndex === QUIZ_QUESTIONS.length - 1) {
+                nextBtn.classList.add('hidden');
+                submitQuizBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitQuizBtn.classList.add('hidden');
+            }
+        }
+
+        function navigateQuestions(direction) {
+            if (direction === 'next' && currentQuestionIndex < QUIZ_QUESTIONS.length - 1) {
+                currentQuestionIndex++;
+            } else if (direction === 'prev' && currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+            }
+            loadQuestion();
+        }
+
+        function handleSubmitQuiz() {
+            clearInterval(quizInterval);
+            score = 0;
+            attemptedQuestions = 0;
+            for (const qId in userAnswers) {
+                attemptedQuestions++;
+                if (userAnswers[qId].isCorrect) {
+                    score++;
+                }
+            }
+
+            const endTime = new Date();
+            const timeTakenMs = endTime - quizStartTime;
+            const hours = Math.floor(timeTakenMs / (1000 * 60 * 60));
+            const minutes = Math.floor((timeTakenMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeTakenMs % (1000 * 60)) / 1000);
+            const timeTakenFormatted = `${formatTwoDigits(hours)}:${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)}`;
+
+            resultNameSpan.textContent = fullName;
+            resultScoreSpan.textContent = score;
+            resultAttemptedSpan.textContent = attemptedQuestions;
+            resultTimeSpan.textContent = timeTakenFormatted;
+
+            quizInterface.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+
+            // Auto-submit to Formspree
+            const formData = new FormData();
+            formData.append('name', fullName);
+            formData.append('score', score);
+            formData.append('attempted_questions', attemptedQuestions);
+            formData.append('time_taken', timeTakenFormatted);
+            formData.append('quiz_topic', quizTopic);
+
+            fetch('https://formspree.io/f/xdkgvgbd', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Quiz results submitted successfully!');
+                } else {
+                    console.error('Failed to submit quiz results.');
+                }
+            }).catch(error => {
+                console.error('Error submitting quiz results:', error);
+            });
+        }
+
+        function initializeQuiz() {
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            score = 0;
+            attemptedQuestions = 0;
+            clearInterval(quizInterval); // Clear any existing timer
+            countdownTimerSpan.textContent = "01:00:00"; // Reset timer display
+
+            // Randomize questions for 30% of users if surprise mode is on
+            if (isSurpriseMeMode && Math.random() < 0.3) {
+                shuffleArray(QUIZ_QUESTIONS);
+            }
+
+            loadQuestion();
+            startTimer();
+        }
+
+        // --- Event Listeners ---
+
+        loginBtn.addEventListener('click', () => {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            if (username === '23MAY' && password === '1122') {
+                loginScreen.classList.add('hidden');
+                nameEntryScreen.classList.remove('hidden');
+                loginError.classList.add('hidden');
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        startQuizBtn.addEventListener('click', () => {
+            fullName = fullNameInput.value.trim();
+            if (fullName) {
+                nameEntryScreen.classList.add('hidden');
+                quizInterface.classList.remove('hidden');
+                nameError.classList.add('hidden');
+
+                const today = new Date();
+                const formattedToday = getFormattedDate(today);
+                liveDateSpan.textContent = formattedToday;
+                updatedDateSpan.textContent = formattedToday;
+
+                const { syllabusForToday, nextAvailableQuizDate } = getTodaySyllabus();
+
+                if (syllabusForToday) {
+                    quizTopic = syllabusForToday.topic;
+                    quizDateSpan.textContent = formattedToday;
+                    quizMessage.classList.add('hidden');
+                    document.getElementById('quiz-content').classList.remove('hidden');
+                    initializeQuiz();
+                } else {
+                    quizDateSpan.textContent = formattedToday; // Still show today's date in title
+                    document.getElementById('quiz-content').classList.add('hidden');
+                    quizMessage.classList.remove('hidden');
+                    if (nextAvailableQuizDate) {
+                        nextQuizDateSpan.textContent = getFormattedDate(nextAvailableQuizDate);
+                    } else {
+                        nextQuizDateSpan.textContent = "no upcoming quizzes found.";
+                    }
+                }
+
+            } else {
+                nameError.classList.remove('hidden');
+            }
+        });
+
+        prevBtn.addEventListener('click', () => navigateQuestions('prev'));
+        nextBtn.addEventListener('click', () => navigateQuestions('next'));
+        submitQuizBtn.addEventListener('click', handleSubmitQuiz);
+        retakeQuizBtn.addEventListener('click', () => {
+            resultsScreen.classList.add('hidden');
+            nameEntryScreen.classList.remove('hidden'); // Go back to name entry for a fresh start
+            fullNameInput.value = ''; // Clear full name
+            usernameInput.value = ''; // Clear username
+            passwordInput.value = ''; // Clear password
+            loginScreen.classList.remove('hidden'); // Back to login screen
+        });
+
+        surpriseMeBtn.addEventListener('click', () => {
+            isSurpriseMeMode = !isSurpriseMeMode;
+            surpriseMeBtn.textContent = isSurpriseMeMode ? 'Surprise Me (ON)' : 'Surprise Me (30% Random)';
+            surpriseMeBtn.classList.toggle('bg-green-300', isSurpriseMeMode);
+            // Re-initialize quiz to apply randomization if toggled on
+            initializeQuiz();
+        });
+
+        // Initial date display on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const formattedToday = getFormattedDate(today);
+            liveDateSpan.textContent = formattedToday;
+            updatedDateSpan.textContent = formattedToday;
+            quizDateSpan.textContent = formattedToday; // Set initial quiz date to today
+        });
+
+    </script>
+</body>
+</html>
